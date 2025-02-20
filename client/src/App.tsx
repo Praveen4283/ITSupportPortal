@@ -12,6 +12,7 @@ import { getDashboardRoute } from "./lib/routes";
 // Pages
 import Login from "@/pages/auth/Login";
 import SignUp from "@/pages/auth/SignUp";
+import ForgotPassword from "@/pages/auth/ForgotPassword";
 import CustomerDashboard from "@/pages/dashboard/Customer";
 import SupportDashboard from "@/pages/dashboard/Support";
 import AdminDashboard from "@/pages/dashboard/Admin";
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/" component={RootRedirect} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={SignUp} />
+      <Route path="/auth/forgot-password" component={ForgotPassword} />
 
       <Route path="/dashboard/customer">
         <AuthGuard allowedRoles={[UserRole.CUSTOMER]}>

@@ -126,7 +126,7 @@ export default function Login() {
                     </FormItem>
                   )}
                 />
-                <Link href="/forgot-password">
+                <Link href="/auth/forgot-password">
                   <a className="text-sm text-primary hover:underline">
                     Forgot password?
                   </a>

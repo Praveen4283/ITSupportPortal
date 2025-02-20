@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/logo";
 import {
   Form,
   FormControl,
@@ -12,7 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 
@@ -63,7 +64,7 @@ export default function ForgotPassword() {
             <Button variant="ghost" onClick={() => setLocation('/login')}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <CardTitle>Reset Password</CardTitle>
+            <Logo />
           </div>
         </CardHeader>
         <CardContent>
