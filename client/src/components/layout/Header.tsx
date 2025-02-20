@@ -3,7 +3,8 @@ import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
 import { Sun, Moon, LogOut } from "lucide-react";
 import { Link } from "wouter";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Logo } from "@/components/ui/logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +20,7 @@ export function Header() {
     <header className="border-b">
       <div className="container flex h-16 items-center justify-between">
         <Link href="/">
-          <h1 className="text-2xl font-bold">IT Support Portal</h1>
+          <Logo />
         </Link>
 
         <div className="flex items-center gap-4">

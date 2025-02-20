@@ -5,6 +5,7 @@ import { Link, useLocation } from "wouter";
 import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/logo";
 import {
   Form,
   FormControl,
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Moon, Sun } from "lucide-react";
 
@@ -71,8 +72,8 @@ export default function Login() {
       </div>
 
       <Card className="w-[400px]">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">Login</CardTitle>
+        <CardHeader className="text-center">
+          <Logo />
         </CardHeader>
         <CardContent>
           <Form {...form}>
