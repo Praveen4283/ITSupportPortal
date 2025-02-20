@@ -9,6 +9,9 @@ import { insertUserSchema, insertTicketSchema, insertTicketCommentSchema, UserRo
 import memorystore from "memorystore";
 import { randomBytes } from "crypto";
 import * as bcrypt from "bcryptjs";
+import { eq } from 'drizzle-orm'; // Or similar ORM import, adjust as needed.
+import { users, tickets } from './db-schema'; // Or similar import for your DB schema
+
 
 declare module "express-session" {
   interface SessionData {
@@ -158,13 +161,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check if email exists for password reset
+  app.post("/api/auth/check-email", async (req, res) => {
+    try {
+      const { email } = req.body;
+      const user = await storage.getUserByEmail(email);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ message: "Email found" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to process request" });
+    }
+  });
+
+  // Reset password directly
   app.post("/api/auth/reset-password", async (req, res) => {
     try {
-      const { token, password } = req.body;
-      const user = await storage.getUserByResetToken(token);
+      const { email, password } = req.body;
+      const user = await storage.getUserByEmail(email);
 
-      if (!user || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
-        return res.status(400).json({ message: "Invalid or expired token" });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
       }
 
       await storage.updatePassword(user.id, password);
@@ -298,6 +318,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.sendStatus(204);
     } catch (error) {
       res.status(500).json({ message: "Failed to delete ticket" });
+    }
+  });
+
+  // Get support team users
+  app.get("/api/users/support", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const supportUsers = await storage.getSupportUsers(); // Assuming storage has this function
+      res.json(supportUsers);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch support users" });
+    }
+  });
+
+  // Assign ticket
+  app.patch("/api/tickets/:id/assign", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.SUPPORT) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const { assignedToId } = req.body;
+      const ticket = await storage.assignTicket(parseInt(req.params.id), assignedToId); // Assuming storage has this function
+      res.json(ticket);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to assign ticket" });
     }
   });
 

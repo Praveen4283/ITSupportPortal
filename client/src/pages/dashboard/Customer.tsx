@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -13,19 +15,24 @@ import {
 } from "@/components/ui/table";
 import { formatDistanceToNow } from "date-fns";
 import { CreateTicketDialog } from "@/components/tickets/CreateTicketDialog";
+import { TicketDetailsDialog } from "@/components/tickets/TicketDetailsDialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trash2 } from "lucide-react";
+import { Search } from "lucide-react";
 import type { Ticket } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
-import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function CustomerDashboard() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const { data: tickets, isLoading } = useQuery<Ticket[]>({
     queryKey: ["/api/tickets"],
   });
 
   const { toast } = useToast();
+
+  const filteredTickets = tickets?.filter((ticket) =>
+    ticket.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleDeleteTicket = async (ticketId: number) => {
     try {
@@ -53,7 +60,18 @@ export default function CustomerDashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Tickets</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Recent Tickets</CardTitle>
+            <div className="relative w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search tickets..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -62,7 +80,7 @@ export default function CustomerDashboard() {
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-full" />
             </div>
-          ) : tickets && tickets.length > 0 ? (
+          ) : filteredTickets && filteredTickets.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -70,12 +88,16 @@ export default function CustomerDashboard() {
                   <TableHead>Status</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Assigned To</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tickets.map((ticket) => (
-                  <TableRow key={ticket.id}>
+                {filteredTickets.map((ticket) => (
+                  <TableRow
+                    key={ticket.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setSelectedTicket(ticket)}
+                  >
                     <TableCell>{ticket.title}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="capitalize">
@@ -88,16 +110,13 @@ export default function CustomerDashboard() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {ticket.createdAt && formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true })}
+                      {ticket.createdAt &&
+                        formatDistanceToNow(new Date(ticket.createdAt), {
+                          addSuffix: true,
+                        })}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => handleDeleteTicket(ticket.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {ticket.assignedToId || "Unassigned"}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -110,6 +129,12 @@ export default function CustomerDashboard() {
           )}
         </CardContent>
       </Card>
+
+      <TicketDetailsDialog
+        ticket={selectedTicket}
+        open={!!selectedTicket}
+        onOpenChange={(open) => !open && setSelectedTicket(null)}
+      />
     </DashboardLayout>
   );
 }
