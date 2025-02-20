@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useLocation } from "wouter";
 import { useAuthStore } from "@/store/authStore";
+import { useThemeStore } from "@/store/themeStore";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -23,17 +24,20 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { UserRole } from "@shared/schema";
+import { Moon, Sun } from "lucide-react";
 
 const signUpSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-  name: z.string().min(2),
+  firstName: z.string().min(2),
+  lastName: z.string().min(2),
   role: z.enum([UserRole.CUSTOMER, UserRole.SUPPORT, UserRole.ADMIN]),
 });
 
 export default function SignUp() {
   const [, setLocation] = useLocation();
   const { signUp } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof signUpSchema>>({
@@ -41,14 +45,15 @@ export default function SignUp() {
     defaultValues: {
       email: "",
       password: "",
-      name: "",
+      firstName: "",
+      lastName: "",
       role: UserRole.CUSTOMER,
     },
   });
 
   async function onSubmit(values: z.infer<typeof signUpSchema>) {
     try {
-      await signUp(values.email, values.password, values.name, values.role);
+      await signUp(values);
       toast({
         title: "Success",
         description: "Account created successfully",
@@ -64,27 +69,57 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="fixed top-4 right-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTheme}
+          className="h-9 w-9"
+        >
+          {theme === 'light' ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+
       <Card className="w-[400px]">
         <CardHeader>
-          <CardTitle>Sign Up</CardTitle>
+          <CardTitle className="text-2xl font-bold">Sign Up</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter first name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter last name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="email"
@@ -142,10 +177,10 @@ export default function SignUp() {
               </Button>
             </form>
           </Form>
-          <p className="text-center mt-4">
+          <p className="text-center mt-4 text-muted-foreground">
             Already have an account?{" "}
             <Link href="/login">
-              <a className="text-primary">Login</a>
+              <a className="text-primary hover:underline">Login</a>
             </Link>
           </p>
         </CardContent>

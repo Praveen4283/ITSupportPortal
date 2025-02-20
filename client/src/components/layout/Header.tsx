@@ -40,9 +40,9 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar className="h-9 w-9 cursor-pointer">
-                  <AvatarImage src={user.avatarUrl || ''} />
                   <AvatarFallback>
-                    {user.name.substring(0, 2).toUpperCase()}
+                    {user.firstName?.substring(0, 1).toUpperCase()}
+                    {user.lastName?.substring(0, 1).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>

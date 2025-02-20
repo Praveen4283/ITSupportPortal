@@ -5,8 +5,9 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { z } from "zod";
-import { insertUserSchema, insertTicketSchema, insertTicketCommentSchema, UserRole, type User } from "@shared/schema";
+import { insertUserSchema, insertTicketSchema, insertTicketCommentSchema, UserRole, type User as UserType } from "@shared/schema";
 import memorystore from "memorystore";
+import { randomBytes } from "crypto";
 
 declare module "express-session" {
   interface SessionData {
@@ -14,17 +15,20 @@ declare module "express-session" {
   }
 }
 
-// Extend Express.User without recursive reference
+// Update the User interface in the global namespace
 declare global {
   namespace Express {
-    // Extending the User interface explicitly with required properties
     interface User {
       id: number;
       email: string;
-      name: string;
-      role: string;
-      avatarUrl?: string | null;
-      createdAt: Date | null;
+      firstName: string;
+      lastName: string;
+      role: UserRole;
+      companyName?: string;
+      department?: string;
+      designation?: string;
+      phoneNumber?: string;
+      createdAt: Date;
     }
   }
 }
@@ -95,14 +99,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/login", passport.authenticate("local"), (req, res) => {
+    // Handle remember me
+    if (req.body.rememberMe) {
+      const token = randomBytes(32).toString('hex');
+      storage.setRememberToken(req.user!.id, token);
+      // Set a cookie that expires in 30 days
+      res.cookie('remember_token', token, {
+        expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+      });
+    }
     res.json(req.user);
   });
 
   app.post("/api/auth/logout", (req, res) => {
+    res.clearCookie('remember_token');
     req.logout(() => {
       res.json({ message: "Logged out successfully" });
     });
   });
+
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      const user = await storage.getUserByEmail(email);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const token = randomBytes(32).toString('hex');
+      await storage.setResetToken(user.id, token);
+
+      // In a real application, send an email with the reset link
+      // For now, we'll just return success
+      res.json({ message: "Reset instructions sent" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to process request" });
+    }
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      const user = await storage.getUserByResetToken(token);
+
+      if (!user || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+      }
+
+      await storage.updatePassword(user.id, password);
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
+  // Profile routes
+  app.patch("/api/me", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const user = await storage.updateUser(req.user.id, req.body);
+      res.json(user);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update profile" });
+    }
+  });
+
 
   // User routes
   app.get("/api/me", (req, res) => {
@@ -195,6 +262,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(comments);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  // Add this route to handle ticket deletion
+  app.delete("/api/tickets/:id", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (req.user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      await storage.deleteTicket(parseInt(req.params.id));
+      res.sendStatus(204);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete ticket" });
     }
   });
 

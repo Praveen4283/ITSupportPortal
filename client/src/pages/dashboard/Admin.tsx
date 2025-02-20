@@ -13,8 +13,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus } from "lucide-react";
+import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
+import { Trash2 } from "lucide-react";
 import type { User, Ticket } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminDashboard() {
   const { data: users, isLoading: isLoadingUsers } = useQuery<User[]>({
@@ -24,6 +28,25 @@ export default function AdminDashboard() {
   const { data: tickets, isLoading: isLoadingTickets } = useQuery<Ticket[]>({
     queryKey: ["/api/tickets"],
   });
+
+  const { toast } = useToast();
+
+  const handleDeleteTicket = async (ticketId: number) => {
+    try {
+      await apiRequest("DELETE", `/api/tickets/${ticketId}`);
+      queryClient.invalidateQueries({ queryKey: ["/api/tickets"] });
+      toast({
+        title: "Success",
+        description: "Ticket deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete ticket",
+      });
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -35,10 +58,7 @@ export default function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Users</CardTitle>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add User
-            </Button>
+            <CreateUserDialog />
           </CardHeader>
           <CardContent>
             {isLoadingUsers ? (
@@ -60,7 +80,7 @@ export default function AdminDashboard() {
                 <TableBody>
                   {users.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{`${user.firstName} ${user.lastName}`}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize">
@@ -103,6 +123,7 @@ export default function AdminDashboard() {
                     <TableHead>Status</TableHead>
                     <TableHead>Priority</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -123,6 +144,15 @@ export default function AdminDashboard() {
                       </TableCell>
                       <TableCell>
                         {ticket.createdAt && formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true })}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => handleDeleteTicket(ticket.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

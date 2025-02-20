@@ -22,17 +22,31 @@ export type TicketStatusType = typeof TicketStatus[keyof typeof TicketStatus];
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
-  name: text("name").notNull(),
+  password: text("password").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  companyName: text("company_name"),
+  department: text("department"),
   role: text("role").$type<UserRoleType>().notNull().default(UserRole.CUSTOMER),
-  avatarUrl: text("avatar_url"),
+  designation: text("designation"),
+  phoneNumber: text("phone_number"),
   createdAt: timestamp("created_at").defaultNow(),
+  // Authentication fields
+  rememberToken: text("remember_token"),
+  resetPasswordToken: text("reset_password_token"),
+  resetPasswordExpires: timestamp("reset_password_expires"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
-  name: true,
+  password: true,
+  firstName: true,
+  lastName: true,
+  companyName: true,
+  department: true,
   role: true,
-  avatarUrl: true,
+  designation: true,
+  phoneNumber: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
