@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { apiRequest } from '@/lib/queryClient';
-import type { User } from '@shared/schema';
+import type { User, UserRoleType } from '@shared/schema';
 
 interface AuthState {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string, role: UserRoleType) => Promise<void>;
   signOut: () => Promise<void>;
   setUser: (user: User | null) => void;
 }
@@ -20,11 +20,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     const user = await res.json();
     set({ user });
   },
-  signUp: async (email, password, name) => {
+  signUp: async (email, password, name, role) => {
     await apiRequest('POST', '/api/auth/register', { 
       email, 
       password,
-      name
+      name,
+      role
     });
   },
   signOut: async () => {

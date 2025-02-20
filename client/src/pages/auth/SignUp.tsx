@@ -13,13 +13,22 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { UserRole } from "@shared/schema";
 
 const signUpSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(2),
+  role: z.enum([UserRole.CUSTOMER, UserRole.SUPPORT, UserRole.ADMIN]),
 });
 
 export default function SignUp() {
@@ -33,15 +42,16 @@ export default function SignUp() {
       email: "",
       password: "",
       name: "",
+      role: UserRole.CUSTOMER,
     },
   });
 
   async function onSubmit(values: z.infer<typeof signUpSchema>) {
     try {
-      await signUp(values.email, values.password, values.name);
+      await signUp(values.email, values.password, values.name, values.role);
       toast({
         title: "Success",
-        description: "Please check your email to verify your account",
+        description: "Account created successfully",
       });
       setLocation("/login");
     } catch (error) {
@@ -101,6 +111,28 @@ export default function SignUp() {
                         {...field}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={UserRole.CUSTOMER}>Customer</SelectItem>
+                        <SelectItem value={UserRole.SUPPORT}>IT Support</SelectItem>
+                        <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
