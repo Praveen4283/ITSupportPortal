@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -13,12 +14,35 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { CreateTicketDialog } from "@/components/tickets/CreateTicketDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Trash2 } from "lucide-react";
 import type { Ticket } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CustomerDashboard() {
   const { data: tickets, isLoading } = useQuery<Ticket[]>({
     queryKey: ["/api/tickets"],
   });
+
+  const { toast } = useToast();
+
+  const handleDeleteTicket = async (ticketId: number) => {
+    try {
+      await apiRequest("DELETE", `/api/tickets/${ticketId}`);
+      queryClient.invalidateQueries({ queryKey: ["/api/tickets"] });
+      toast({
+        title: "Success",
+        description: "Ticket deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete ticket",
+      });
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -46,6 +70,7 @@ export default function CustomerDashboard() {
                   <TableHead>Status</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -64,6 +89,15 @@ export default function CustomerDashboard() {
                     </TableCell>
                     <TableCell>
                       {ticket.createdAt && formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true })}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleDeleteTicket(ticket.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
