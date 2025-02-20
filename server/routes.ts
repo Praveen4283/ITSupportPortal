@@ -8,6 +8,7 @@ import { z } from "zod";
 import { insertUserSchema, insertTicketSchema, insertTicketCommentSchema, UserRole, type User as UserType } from "@shared/schema";
 import memorystore from "memorystore";
 import { randomBytes } from "crypto";
+import * as bcrypt from "bcryptjs";
 
 declare module "express-session" {
   interface SessionData {
@@ -58,6 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     new LocalStrategy(
       {
         usernameField: "email",
+        passwordField: "password",
       },
       async (email, password, done) => {
         try {
@@ -65,8 +67,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!user) {
             return done(null, false, { message: "Invalid credentials" });
           }
-          // In a real app, compare hashed passwords
-          return done(null, user);
+
+          // Compare password using bcrypt
+          const isValid = await bcrypt.compare(password, user.password);
+          if (!isValid) {
+            return done(null, false, { message: "Invalid credentials" });
+          }
+
+          // Remove sensitive data before sending to client
+          const { password: _, ...safeUser } = user;
+          return done(null, safeUser);
         } catch (err) {
           return done(err);
         }
@@ -81,7 +91,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
-      done(null, user);
+      if (!user) {
+        return done(null, false);
+      }
+      // Remove sensitive data
+      const { password: _, ...safeUser } = user;
+      done(null, safeUser);
     } catch (err) {
       done(err);
     }
@@ -92,8 +107,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userData = insertUserSchema.parse(req.body);
       const user = await storage.createUser(userData);
-      res.json(user);
+      // Remove sensitive data
+      const { password: _, ...safeUser } = user;
+      res.json(safeUser);
     } catch (error) {
+      console.error("Registration error:", error);
       res.status(400).json({ message: "Invalid user data" });
     }
   });
