@@ -5,12 +5,18 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { z } from "zod";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, insertTicketSchema, insertTicketCommentSchema, UserRole, type User } from "@shared/schema";
 import memorystore from "memorystore";
 
 declare module "express-session" {
   interface SessionData {
     userId: number;
+  }
+}
+
+declare global {
+  namespace Express {
+    interface User extends User {}
   }
 }
 
@@ -55,7 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     )
   );
 
-  passport.serializeUser((user: any, done) => {
+  passport.serializeUser((user, done) => {
     done(null, user.id);
   });
 
@@ -89,12 +95,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Protected route example
+  // User routes
   app.get("/api/me", (req, res) => {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     res.json(req.user);
+  });
+
+  // Ticket routes
+  app.post("/api/tickets", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const ticketData = insertTicketSchema.parse({
+        ...req.body,
+        userId: req.user.id,
+      });
+      const ticket = await storage.createTicket(ticketData);
+      res.json(ticket);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid ticket data" });
+    }
+  });
+
+  app.get("/api/tickets", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      let tickets;
+      if (req.user.role === UserRole.CUSTOMER) {
+        tickets = await storage.getTicketsByUser(req.user.id);
+      } else if (req.user.role === UserRole.SUPPORT) {
+        tickets = await storage.getTicketsByAssignee(req.user.id);
+      } else {
+        // Admin can see all tickets
+        tickets = await storage.getTicketsByUser(req.user.id);
+      }
+      res.json(tickets);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch tickets" });
+    }
+  });
+
+  app.get("/api/tickets/:id", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const ticket = await storage.getTicket(parseInt(req.params.id));
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      res.json(ticket);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch ticket" });
+    }
+  });
+
+  app.post("/api/tickets/:id/comments", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const commentData = insertTicketCommentSchema.parse({
+        ...req.body,
+        ticketId: parseInt(req.params.id),
+        userId: req.user.id,
+      });
+      const comment = await storage.createTicketComment(commentData);
+      res.json(comment);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid comment data" });
+    }
+  });
+
+  app.get("/api/tickets/:id/comments", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const comments = await storage.getTicketComments(parseInt(req.params.id));
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
   });
 
   const httpServer = createServer(app);

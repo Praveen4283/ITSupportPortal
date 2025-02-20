@@ -1,0 +1,76 @@
+Create a full-stack IT Support Portal application with the following features:
+
+Technology Stack:
+
+Frontend: React with TypeScript, Vite as build tool
+Styling: Tailwind CSS with dark mode support
+State Management: Zustand
+Routing: React Router
+Backend: Supabase for authentication and database
+Icons: Lucide React
+Core Features:
+
+Role-based authentication (Customer, IT Support, Admin)
+User registration with role selection
+Login with email/password
+Profile management
+Dashboard with role-specific views
+Admin panel for user management
+Dark mode toggle
+File Structure:
+
+src/
+components/ (Header, AdminPanel)
+pages/ (Login, SignUp, Dashboard, Profile)
+store/ (authStore, themeStore)
+lib/ (supabase client)
+supabase/ (database migrations)
+public/ (static assets)
+Key Components:
+
+SignUp.tsx: Role-based registration form
+Login.tsx: Authentication form with social login options
+authStore.ts: Zustand store for authentication state
+AdminPanel.tsx: Admin interface for user management
+Header.tsx: Navigation with dark mode toggle
+Required Dependencies:
+
+React, React DOM
+TypeScript
+Vite
+Tailwind CSS
+Zustand
+React Router
+Supabase client
+Lucide React icons
+@azure/msal-browser (for Azure AD integration)
+Configuration Files:
+
+vite.config.ts
+tailwind.config.js
+postcss.config.js
+tsconfig.json
+.env (for Supabase credentials)
+Database Schema:
+
+Users table with roles (Customer, IT Support, Admin)
+Profiles table with user details
+Tickets table for support requests
+Role-based access control
+Styling:
+
+Responsive design with Tailwind CSS
+Dark mode support
+Consistent UI components
+Authentication Flow:
+
+Role-based access control
+Protected routes for authenticated users
+Role-specific redirects after login
+Session management with Supabase
+Error Handling:
+
+Form validation
+Error messages for failed operations
+Graceful handling of authentication errors
+Include all necessary configuration files, TypeScript types, and proper error handling. The application should be production-ready with proper security measures in place.
