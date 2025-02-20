@@ -14,9 +14,18 @@ declare module "express-session" {
   }
 }
 
+// Extend Express.User without recursive reference
 declare global {
   namespace Express {
-    interface User extends User {}
+    // Extending the User interface explicitly with required properties
+    interface User {
+      id: number;
+      email: string;
+      name: string;
+      role: string;
+      avatarUrl?: string | null;
+      createdAt: Date | null;
+    }
   }
 }
 
